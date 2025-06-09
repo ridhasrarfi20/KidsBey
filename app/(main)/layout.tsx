@@ -19,8 +19,10 @@ const MainLayout = ({ children }: PropsWithChildren) => {
       />
       <MobileHeader />
       <Sidebar className="hidden lg:flex" />
-      <main className="h-full pt-[50px] lg:pl-[256px] lg:pt-0">
-        <div className="mx-auto h-full max-w-[1056px] pt-6">{children}</div>
+      <main className="min-h-screen w-full pt-[50px] lg:pl-[256px] lg:pt-0 bg-transparent">
+        <div className="mx-auto h-full w-full max-w-full sm:max-w-[1056px] pt-4 sm:pt-6 px-2 sm:px-4 md:px-8">
+          {children}
+        </div>
       </main>
     </>
   );

@@ -43,7 +43,7 @@ const LearnPage = async () => {
   const isPro = !!userSubscription?.isActive;
 
   return (
-    <div className="flex flex-row-reverse gap-[48px] px-6">
+    <div className="flex flex-col md:flex-row-reverse gap-4 sm:gap-8 md:gap-12 lg:gap-[48px] px-2 sm:px-4 md:px-6 w-full max-w-full">
       <StickyWrapper>
         <UserProgress
           activeCourse={userProgress.activeCourse}

@@ -59,36 +59,18 @@ export const List = ({ courses, activeCourseId }: ListProps) => {
         transition={{ duration: 8, repeat: Infinity, repeatType: "reverse" }}
       />
       
-      <div className="flex flex-col gap-10">
-        {/* First row - exactly 3 cards */}
-        <div className="flex justify-center" style={{ gap: '32px' }}>
-          {courses.slice(0, 3).map((course) => (
-            <Card
-              key={course.id}
-              id={course.id}
-              title={course.title}
-              imageSrc={course.imageSrc}
-              onClick={onClick}
-              disabled={pending}
-              isActive={course.id === activeCourseId}
-            />
-          ))}
-        </div>
-        
-        {/* Second row - exactly 2 cards */}
-        <div className="mx-auto flex w-fit" style={{ gap: '32px' }}>
-          {courses.slice(3, 5).map((course) => (
-            <Card
-              key={course.id}
-              id={course.id}
-              title={course.title}
-              imageSrc={course.imageSrc}
-              onClick={onClick}
-              disabled={pending}
-              isActive={course.id === activeCourseId}
-            />
-          ))}
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-2 sm:gap-x-4 md:gap-x-6 w-full justify-items-center pb-4">
+        {courses.map((course) => (
+          <Card
+            key={course.id}
+            id={course.id}
+            title={course.title}
+            imageSrc={course.imageSrc}
+            onClick={onClick}
+            disabled={pending}
+            isActive={course.id === activeCourseId}
+          />
+        ))}
       </div>
     </div>
   );

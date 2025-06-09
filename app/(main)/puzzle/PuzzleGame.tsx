@@ -41,11 +41,103 @@ function isSolved(tiles: (number | null)[]): boolean {
 const PUZZLE_TIME_LIMIT = 5 * 60; // 5 minutes in seconds
 
 interface PuzzleGameProps {
-  imageFile?: string;
+  imageFile: string;
+  imageWidth: number;
+  imageHeight: number;
   onRestart?: () => void;
 }
 
-const PuzzleGame: React.FC<PuzzleGameProps> = ({ imageFile = "1.jpg", onRestart }) => {
+const PuzzleGame: React.FC<PuzzleGameProps> = ({ imageFile, imageWidth, imageHeight, onRestart }) => {
+  // ...existing state
+  const [touchDragging, setTouchDragging] = React.useState<null | { tile: number; fromTray: boolean }>(null);
+  const [touchPosition, setTouchPosition] = React.useState<{ x: number; y: number } | null>(null);
+  const [selectedTile, setSelectedTile] = React.useState<number | null>(null);
+
+  // Tap-to-select tray tile
+  const handleTrayTileClick = (tile: number) => {
+    setSelectedTile(tile === selectedTile ? null : tile);
+  };
+  // Tap-to-place on board
+  const handleBoardCellClick = (idx: number) => {
+    if (selectedTile !== null && boardTiles[idx] === null) {
+      handleUserInteract();
+      // Only allow placing if the piece is correct
+      if (selectedTile !== idx) {
+        // Play incorrect sound
+        if (userHasInteracted) {
+          const audio = new window.Audio('/incorrect.mp3');
+          audio.currentTime = 0;
+          audio.play();
+        }
+        setSelectedTile(null);
+        return;
+      }
+      // Play correct sound
+      if (userHasInteracted) {
+        const audio = new window.Audio('/correct.wav');
+        audio.currentTime = 0;
+        audio.play();
+      }
+      let newBoard = [...boardTiles];
+      let newTray = trayTiles.filter(t => t !== selectedTile);
+      const prevIdx = boardTiles.indexOf(selectedTile);
+      if (prevIdx !== -1) newBoard[prevIdx] = null;
+      newBoard[idx] = selectedTile;
+      setBoardTiles(newBoard);
+      setTrayTiles(newTray);
+      setSelectedTile(null);
+    }
+  };
+
+  // Helper to get board cell from touch position
+  const getBoardCellFromTouch = (clientX: number, clientY: number) => {
+    const board = document.getElementById('puzzle-board');
+    if (!board) return null;
+    const rect = board.getBoundingClientRect();
+    if (
+      clientX < rect.left || clientX > rect.right ||
+      clientY < rect.top || clientY > rect.bottom
+    ) return null;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const cellWidth = rect.width / GRID_SIZE;
+    const cellHeight = rect.height / GRID_SIZE;
+    const col = Math.floor(x / cellWidth);
+    const row = Math.floor(y / cellHeight);
+    const idx = row * GRID_SIZE + col;
+    if (col >= 0 && col < GRID_SIZE && row >= 0 && row < GRID_SIZE) return idx;
+    return null;
+  };
+
+  // Touch event handlers
+  const handleTileTouchStart = (tile: number, fromTray: boolean) => (e: React.TouchEvent) => {
+    setTouchDragging({ tile, fromTray });
+    setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+  const handleTileTouchMove = (e: React.TouchEvent) => {
+    if (!touchDragging) return;
+    setTouchPosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+  };
+  const handleTileTouchEnd = (e: React.TouchEvent) => {
+    if (!touchDragging) return;
+    const { tile, fromTray } = touchDragging;
+    const { clientX, clientY } = e.changedTouches[0];
+    // Try to drop on board
+    const boardIdx = getBoardCellFromTouch(clientX, clientY);
+    if (boardIdx !== null) {
+      handleBoardDrop(boardIdx);
+    } else {
+      // Drop back to tray
+      handleTrayDrop();
+    }
+    setTouchDragging(null);
+    setTouchPosition(null);
+  };
+
+  const GRID_SIZE = 5;
+  const TILE_COUNT = GRID_SIZE * GRID_SIZE;
+  const TILE_WIDTH = Math.round(imageWidth / GRID_SIZE);
+  const TILE_HEIGHT = Math.round(imageHeight / GRID_SIZE);
   const [userHasInteracted, setUserHasInteracted] = useState(false);
   const [img, setImg] = useState<string | null>(imageFile);
   const [boardTiles, setBoardTiles] = useState<(number | null)[]>(Array(TILE_COUNT).fill(null));
@@ -214,9 +306,13 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ imageFile = "1.jpg", onRestart 
   const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
   return (
-    <div className="flex flex-col items-center p-6" onClick={handleUserInteract} onDrag={handleUserInteract} >
+    <div
+      className="flex flex-col items-center w-full px-2 py-4 sm:px-4 md:px-8 lg:px-12"
+      style={{ minHeight: '100vh', background: 'rgba(240,245,255,0.85)', backdropFilter: 'blur(6px)' }}
+      onClick={handleUserInteract} onDrag={handleUserInteract}
+    >
       {/* Timer Bar */}
-      <div className="w-full max-w-[620px] flex flex-row justify-between items-center mb-4">
+      <div className="w-full max-w-2xl flex flex-row flex-wrap justify-between items-center mb-4 gap-2">
         <div className="text-lg font-bold tracking-widest text-blue-800">
           Temps restant: <span className={timeLeft <= 10 ? 'text-red-600' : ''}>{timeString}</span>
         </div>
@@ -235,118 +331,111 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ imageFile = "1.jpg", onRestart 
           </button>
         )}
       </div>
-      {solved && !timeUp && (
-        <div className="w-full max-w-[620px] text-center text-3xl font-bold text-green-600 mb-4 animate-bounce">
-          🎉 felicitation tu as resolu le puzzle 🎉
-        </div>
-      )}
-      {timeUp && !solved && (
-        <div className="w-full max-w-[620px] text-center text-2xl font-bold text-red-600 mb-4 animate-pulse">
-          temps écoulé , reessaye !
-        </div>
-      )}
-
-      {/* Progress Bar */}
-      <div className="w-full max-w-[620px] h-4 bg-gray-300 rounded-full mb-6 overflow-hidden shadow-inner">
-        <div
-          className="h-full bg-green-500 transition-all duration-500"
-          style={{ width: `${progress * 100}%` }}
-        />
-      </div>
-     
 
       {/* Puzzle board */}
       <div
-        className="grid mb-8"
         style={{
-          gridTemplateColumns: `repeat(${GRID_SIZE}, ${TILE_WIDTH}px)`,
-          gridTemplateRows: `repeat(${GRID_SIZE}, ${TILE_HEIGHT}px)`,
-          gap: 0,
+          width: '100%',
+          maxWidth: '100vw',
+          overflow: 'auto',
+          margin: '0 auto',
+          boxSizing: 'border-box',
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
-        {boardTiles.map((tile, idx) => {
-          const row = Math.floor(idx / GRID_SIZE);
-          const col = idx % GRID_SIZE;
-          const showBlur = tile === null;
-          return (
-            <div
-              key={idx}
-              style={{
-                width: TILE_WIDTH,
-                height: TILE_HEIGHT,
-                background: 'transparent',
-                boxSizing: 'border-box',
-              }}
-              draggable={tile !== null && !solved}
-              onDragStart={tile !== null ? (e) => handleDragStart(tile, e) : undefined}
-              onDrop={() => handleBoardDrop(idx)}
-              onDragOver={handleDragOver}
-            >
-              {(() => {
-                if (tile !== null) {
-                  return (
-                    <>
-                      <Image
-                        src={`/images/${img || imageFile}`}
-                        alt={`tile-${tile}`}
-                        width={IMAGE_WIDTH}
-                        height={IMAGE_HEIGHT}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "none",
-                          objectPosition: `-${(tile % GRID_SIZE) * TILE_WIDTH}px -${Math.floor(tile / GRID_SIZE) * TILE_HEIGHT}px`,
-                          pointerEvents: "none",
-                          userSelect: "none",
-                          background: '#ddd',
-                        }}
-                        draggable={false}
-                        priority
-                      />
-                      
-                    </>
-                  );
-                } else if (showBlur) {
-                  return (
-                    <Image
-                      src={`/images/${img || imageFile}`}
-                      alt={`blur-preview-${idx}`}
-                      width={IMAGE_WIDTH}
-                      height={IMAGE_HEIGHT}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "none",
-                        objectPosition: `-${col * TILE_WIDTH}px -${row * TILE_HEIGHT}px`,
-                        filter: "blur(6px)",
-                        opacity: 0.5,
-                        pointerEvents: "none",
-                        userSelect: "none",
-                      }}
-                      draggable={false}
-                      priority
-                    />
-                  );
-                } else {
-                  return null;
-                }
-              })()}
-            </div>
-          );
-        })}
+        <div
+          id="puzzle-board"
+          className="grid mb-8 bg-white/60 rounded-xl shadow-lg border border-gray-200"
+          style={{
+            aspectRatio: `${imageWidth} / ${imageHeight}`,
+            width: '100%',
+            maxWidth: imageWidth ? `${imageWidth}px` : '100%',
+            maxHeight: imageHeight ? `${imageHeight}px` : '100%',
+            margin: '0 auto',
+            gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
+            gridTemplateRows: `repeat(${GRID_SIZE}, 1fr)`,
+            gap: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {boardTiles.map((tile, idx) => {
+            const row = Math.floor(idx / GRID_SIZE);
+            const col = idx % GRID_SIZE;
+            const showBlur = tile === null;
+            return (
+              <div
+                key={idx}
+                style={{
+                  width: TILE_WIDTH,
+                  height: TILE_HEIGHT,
+                  background: 'transparent',
+                  boxSizing: 'border-box',
+                  border: selectedTile !== null && boardTiles[idx] === null ? '2px dashed #22c55e' : undefined,
+                }}
+                draggable={tile !== null && !solved}
+                onDragStart={tile !== null ? (e) => handleDragStart(tile, e) : undefined}
+                onDrop={() => handleBoardDrop(idx)}
+                onDragOver={handleDragOver}
+                onTouchStart={tile !== null ? handleTileTouchStart(tile, false) : undefined}
+                onTouchMove={tile !== null ? handleTileTouchMove : undefined}
+                onTouchEnd={tile !== null ? handleTileTouchEnd : undefined}
+                onClick={() => handleBoardCellClick(idx)}
+              >
+                {tile !== null ? (
+                  <Image
+                    src={`/images/${img || imageFile}`}
+                    alt={`tile-${tile}`}
+                    width={imageWidth}
+                    height={imageHeight}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'none',
+                      objectPosition: `${(tile % GRID_SIZE) / (GRID_SIZE - 1) * 100}% ${Math.floor(tile / GRID_SIZE) / (GRID_SIZE - 1) * 100}%`,
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                      background: '#ddd',
+                    }}
+                    draggable={false}
+                    priority
+                  />
+                ) : (
+                  <Image
+                    src={`/images/${img || imageFile}`}
+                    alt={`blur-preview-${idx}`}
+                    width={imageWidth}
+                    height={imageHeight}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'none',
+                      objectPosition: `${(col) / (GRID_SIZE - 1) * 100}% ${(row) / (GRID_SIZE - 1) * 100}%`,
+                      filter: 'blur(6px)',
+                      opacity: 0.5,
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                    }}
+                    draggable={false}
+                    priority
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
-
-      {/* Tray */}
+      {/* Tray tiles */}
       <div
-        className="flex flex-row border-t pt-4 mb-8 justify-center items-center flex-wrap"
-        style={{ gap: 2, minHeight: TILE_HEIGHT }}
+        className="flex flex-row border-t pt-4 mb-8 justify-center items-center flex-nowrap w-full max-w-2xl overflow-x-auto gap-2"
+        style={{ minHeight: TILE_HEIGHT }}
         onDrop={handleTrayDrop}
         onDragOver={handleDragOver}
       >
         {trayTiles.map((tile) => (
           <div
             key={tile}
-            className="border bg-gray-200 relative overflow-hidden"
+            className={`border bg-gray-200 relative overflow-hidden rounded-md shadow-sm mx-1 flex-shrink-0 ${touchDragging?.tile === tile ? 'ring-4 ring-blue-400' : ''} ${selectedTile === tile ? 'ring-4 ring-green-500' : ''}`}
             style={{
               width: TILE_WIDTH,
               height: TILE_HEIGHT,
@@ -355,26 +444,30 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ imageFile = "1.jpg", onRestart 
             }}
             draggable={!solved}
             onDragStart={(e) => handleDragStart(tile, e) }
+            onTouchStart={handleTileTouchStart(tile, true)}
+            onTouchMove={handleTileTouchMove}
+            onTouchEnd={handleTileTouchEnd}
+            onClick={() => handleTrayTileClick(tile)}
           >
             <Image
               src={`/images/${img || imageFile}`}
               alt={`tile-${tile}`}
-              width={IMAGE_WIDTH}
-              height={IMAGE_HEIGHT}
+              width={imageWidth}
+              height={imageHeight}
               style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "none",
-                objectPosition: `-${(tile % GRID_SIZE) * TILE_WIDTH}px -${Math.floor(tile / GRID_SIZE) * TILE_HEIGHT}px`,
-                pointerEvents: "none",
-                userSelect: "none",
+                width: '100%',
+                height: '100%',
+                objectFit: 'none',
+                objectPosition: `${(tile % GRID_SIZE) / (GRID_SIZE - 1) * 100}% ${Math.floor(tile / GRID_SIZE) / (GRID_SIZE - 1) * 100}%`,
+                pointerEvents: 'none',
+                userSelect: 'none',
                 background: '#ddd',
                 border: '1px solid #333',
+                boxSizing: 'border-box',
               }}
               draggable={false}
               priority
             />
-            
           </div>
         ))}
       </div>

@@ -35,7 +35,7 @@ export default function RootLayout({
       }}
     >
       <html lang="en">
-        <body className={font.className}>
+        <body className={font.className + " min-h-screen w-full"}>
           <Toaster theme="light" richColors closeButton />
           <ExitModal />
           <HeartsModal />

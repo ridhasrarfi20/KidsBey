@@ -34,10 +34,10 @@ export const Card = ({
       }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "flex h-[280px] w-[250px] cursor-pointer flex-col items-center justify-between rounded-2xl p-5 transition-all duration-300",
+        "flex w-full max-w-[320px] cursor-pointer flex-col items-center gap-2 justify-between rounded-2xl shadow-lg p-2 sm:p-5 transition-all duration-300 border-2",
         isActive 
-          ? "bg-gradient-to-br from-[#E6C17A]/30 to-[#C76C4E]/20 shadow-xl" 
-          : "bg-white shadow-md hover:shadow-xl",
+          ? "border-[#C76C4E] bg-gradient-to-br from-[#E6C17A]/30 to-[#C76C4E]/20 shadow-xl" 
+          : "border-transparent bg-white shadow-md hover:shadow-xl",
         disabled && "pointer-events-none opacity-50"
       )}
     >
@@ -55,7 +55,7 @@ export const Card = ({
       </div>
 
       {imageSrc && (
-        <div className="relative h-[160px] w-[200px] overflow-hidden rounded-xl shadow-md transition-all duration-300">
+        <div className="relative w-full aspect-square sm:aspect-[5/4] overflow-hidden rounded-xl shadow-md transition-all duration-300">
           <motion.div
             className="absolute -inset-1 rounded-xl bg-gradient-to-r from-[#E6C17A] via-[#C76C4E] to-[#4B5E3D] opacity-30 blur-sm"
             animate={{ 
@@ -70,13 +70,13 @@ export const Card = ({
           <img
             src={imageSrc}
             alt={title}
-            className="relative h-full w-full rounded-xl object-cover transition-transform duration-700 hover:scale-110"
+            className="relative w-full h-full object-cover rounded-xl transition-transform duration-700 hover:scale-105"
           />
         </div>
       )}
 
-      <div className="mt-4 w-full">
-        <p className="text-center text-lg font-bold text-[#4B5E3D] drop-shadow-sm">{title}</p>
+      <div className="mt-2 w-full">
+        <p className="text-center text-base sm:text-lg font-semibold text-[#4B5E3D] drop-shadow-sm truncate">{title}</p>
       </div>
       
 

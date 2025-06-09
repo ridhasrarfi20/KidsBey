@@ -13,7 +13,7 @@ const CoursesPage = async () => {
   ]);
 
   return (
-    <div className="relative mx-auto h-full max-w-[912px] px-3 py-6">
+    <div className="relative mx-auto h-full w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-[912px] px-2 sm:px-4 md:px-6 py-4 sm:py-6">
       {/* Decorative elements */}
       <div className="absolute -right-20 -top-10 h-40 w-40 rounded-full bg-[#E6C17A]/10 blur-2xl" />
       <div className="absolute -left-10 bottom-20 h-60 w-60 rounded-full bg-[#C76C4E]/5 blur-3xl" />

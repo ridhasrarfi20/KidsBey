@@ -4,20 +4,26 @@ import PuzzleGame from "./PuzzleGame";
 import Image from "next/image";
 import { useState } from "react";
 
-const IMAGES = [
-  "1.jpg",
-  "2.jpg",
-  "3.jpg",
-  "4.jpg",
-  "5.jpg",
-  "6.jpg",
-  "7.jpg",
-  "9.jpg",
-  "10.jpg",
+interface ImageDetails {
+  src: string;
+  width: number;
+  height: number;
+}
+
+const IMAGES: ImageDetails[] = [
+  { src: "1.jpg", width: 612, height: 413 },
+  { src: "2.jpg", width: 410, height: 612 },
+  { src: "3.jpg", width: 612, height: 408 },
+  { src: "4.jpg", width: 612, height: 408 },
+  { src: "5.jpg", width: 612, height: 408 },
+  { src: "6.jpg", width: 407, height: 612 },
+  { src: "7.jpg", width: 612, height: 407 },
+  { src: "9.jpg", width: 422, height: 612 },
+  { src: "10.jpg", width: 612, height: 408 },
 ];
 
 const PuzzlePage = () => {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<ImageDetails | null>(null);
 
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-gray-50">
@@ -26,15 +32,15 @@ const PuzzlePage = () => {
         <h1 className="text-3xl font-bold mb-8 text-green-700">Jouer au puzzle</h1>
         {!selectedImage ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {IMAGES.map((img) => (
+            {IMAGES.map((imgDetails) => (
               <button
-                key={img}
+                key={imgDetails.src}
                 className="rounded-xl overflow-hidden shadow-lg border-4 border-transparent hover:border-green-500 transition"
-                onClick={() => setSelectedImage(img)}
+                onClick={() => setSelectedImage(imgDetails)}
               >
                 <Image
-                  src={`/images/${img}`}
-                  alt={img}
+                  src={`/images/${imgDetails.src}`}
+                  alt={imgDetails.src}
                   width={300}
                   height={200}
                   className="object-cover w-full h-48"
@@ -43,7 +49,12 @@ const PuzzlePage = () => {
             ))}
           </div>
         ) : (
-          <PuzzleGame imageFile={selectedImage} onRestart={() => setSelectedImage(null)} />
+          <PuzzleGame 
+            imageFile={selectedImage.src} 
+            imageWidth={selectedImage.width} 
+            imageHeight={selectedImage.height} 
+            onRestart={() => setSelectedImage(null)} 
+          />
         )}
       </main>
     </div>
@@ -51,3 +62,15 @@ const PuzzlePage = () => {
 };
 
 export default PuzzlePage;
+
+
+
+
+
+
+
+
+
+
+
+
